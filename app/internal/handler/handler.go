@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"Sprint2/internal/order"
+	"Sprint2/internal/storage"
 
 	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func CreateOrder(channel *amqp091.Channel) http.HandlerFunc {
+func CreateOrder(channel *amqp091.Channel, storage *storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var o order.Order
 
@@ -33,7 +34,20 @@ func CreateOrder(channel *amqp091.Channel) http.HandlerFunc {
 			return
 		}
 
-		orderJSON, err := json.Marshal(o)
+		//Добавляем заказа в БД
+		err = storage.CreateOrder(&o)
+		if err != nil {
+			log.Fatalf("Ошибка добавления заказа в БД: %v", err)
+			return
+		}
+
+		// Сообщение для RabbitMQ
+		msgPublish := map[string]string{
+			"ID":     o.ID,
+			"Status": o.Status,
+		}
+
+		msgRabit, err := json.Marshal(msgPublish)
 		if err != nil {
 			http.Error(w, "Ошибка сериализации в json", http.StatusInternalServerError)
 			return
@@ -47,7 +61,7 @@ func CreateOrder(channel *amqp091.Channel) http.HandlerFunc {
 			false,
 			amqp091.Publishing{
 				ContentType: "application/json",
-				Body:        orderJSON,
+				Body:        msgRabit,
 			})
 		if err != nil {
 			log.Println("Не удалось опубликовать новый заказ", err)

@@ -22,7 +22,7 @@ func CreateChannel(conn *amqp.Connection) (*amqp.Channel, error) {
 		return nil, err
 	}
 
-	return ch,nil
+	return ch, nil
 }
 
 func DeclareQueue(ch *amqp.Channel, queueName string) (amqp.Queue, error) {

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"Sprint2/internal/consumer"
 	"Sprint2/internal/handler"
 	"Sprint2/internal/rabbitmq"
-	"Sprint2/internal/consumer"
+	"Sprint2/internal/storage"
 	"log"
 	"net/http"
 
@@ -11,6 +12,12 @@ import (
 )
 
 func main() {
+
+	// Инициализация БД
+	db, err := storage.New()
+	if err != nil {
+		log.Fatalf("Не удалось подключиться к бд: %v", err)
+	}
 
 	// Подключение к RabbitMQ
 	conn, err := rabbitmq.ConnectRabbitMQ()
@@ -73,9 +80,7 @@ func main() {
 	go consumer.SendNotification(channel)
 
 	r := chi.NewRouter()
-	r.Post("/api/create-order", handler.CreateOrder(channel))
-
-
+	r.Post("/api/create-order", handler.CreateOrder(channel, db))
 
 	err = http.ListenAndServe(":8080", r)
 	if err != nil {

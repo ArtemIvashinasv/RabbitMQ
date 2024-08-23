@@ -40,7 +40,7 @@ func ProcessOrders(channel *amqp.Channel) {
 			log.Println("Заказ обработан")
 
 			n.OrderId = o.ID
-			n.NewStatus = o.Status
+			n.Status = o.Status
 			n.Message = "Заказа обработан"
 
 			notificationJSON, err := json.Marshal(&n)
@@ -94,7 +94,7 @@ func SendNotification(channel *amqp.Channel) {
 				continue
 			}
 
-			log.Printf("Полученно уведомление заказа c id: %v, Новым статусом: %v", notification.OrderId, notification.NewStatus)
+			log.Printf("Полученно уведомление заказа c id: %v, Новым статусом: %v", notification.OrderId, notification.Status)
 		}
 	}()
 

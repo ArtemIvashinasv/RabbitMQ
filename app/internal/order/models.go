@@ -4,12 +4,10 @@ import (
 	"time"
 )
 
-
 type Notification struct {
 	OrderId string `json:"id"`
-	NewStatus string `json:"new_status"`
+	Status  string `json:"new_status"`
 	Message string `json:"message"`
-	
 }
 
 type Order struct {
