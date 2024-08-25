@@ -26,24 +26,21 @@ func ProcessOrders(channel *amqp.Channel) {
 
 	go func() {
 		for msg := range msgs {
-			var o order.Order
-			var n order.Notification
+			//var incomingMsg order.Notification
+			var notification order.Notification
 
-			err := json.Unmarshal(msg.Body, &o)
+			err := json.Unmarshal(msg.Body, &notification)
 			if err != nil {
 				log.Println("Не удалось декодировать заказ ", err)
 				continue
 			}
 			log.Println("Заказ получен")
 
-			o.Status = "process"
+			notification.Status = "process"
+			notification.Message = "Заказа обработан"
 			log.Println("Заказ обработан")
 
-			n.OrderId = o.ID
-			n.Status = o.Status
-			n.Message = "Заказа обработан"
-
-			notificationJSON, err := json.Marshal(&n)
+			notificationJSON, err := json.Marshal(&notification)
 			if err != nil {
 				log.Println("Не удалось закодировать уведомление ", err)
 				continue

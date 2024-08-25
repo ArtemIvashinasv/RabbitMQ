@@ -6,6 +6,12 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const (
+	NewOrderQueue = "new_orders_queue"
+	NotificationQueue = "notification_queue"
+	ProcessingQueue = "processing_orders_queue"
+)
+
 func ConnectRabbitMQ() (*amqp.Connection, error) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {

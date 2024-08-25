@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	// Инициализация БД
+	//Инициализация БД
 	db, err := storage.New()
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к бд: %v", err)
@@ -34,53 +34,23 @@ func main() {
 	defer channel.Close()
 
 	// Создание очереди для новых заказов
-	_, err = channel.QueueDeclare(
-		"new_orders_queue",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		log.Fatalf("Не удалось создать очередь новых заказов: %v", err)
-	}
-
+	_, err = rabbitmq.DeclareQueue(channel, rabbitmq.NewOrderQueue)
+	
 	// Создание очереди для уведомлений
-	_, err = channel.QueueDeclare(
-		"notification_queue",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		log.Fatalf("Не удалось создать очередь уведомлений: %v", err)
-	}
+	_, err = rabbitmq.DeclareQueue(channel, rabbitmq.NotificationQueue)
+	
 
 	// Создание очереди для заказов в обработке
-	_, err = channel.QueueDeclare(
-		"processing_orders_queue",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		log.Fatalf("Не удалось создать очередь обработки заказов: %v", err)
-	}
+	_, err = rabbitmq.DeclareQueue(channel, rabbitmq.ProcessingQueue)
+	
 
 	//Запуск обработчика и отправки уведомлений
 	go consumer.ProcessOrders(channel)
 	go consumer.SendNotification(channel)
 
 	r := chi.NewRouter()
-	r.Post("/api/create-order", handler.CreateOrder(channel, db))
+	r.Post("/api/create-order", handler.CreateOrder(channel,db))
+	r.Get("/api/order/{id}", handler.GetOrder(db))
 
 	err = http.ListenAndServe(":8080", r)
 	if err != nil {

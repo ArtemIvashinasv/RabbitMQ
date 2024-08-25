@@ -9,6 +9,7 @@ import (
 	"Sprint2/internal/order"
 	"Sprint2/internal/storage"
 
+	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 )
@@ -16,6 +17,7 @@ import (
 func CreateOrder(channel *amqp091.Channel, storage *storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var o order.Order
+		var msgPublish order.Notification
 
 		err := json.NewDecoder(r.Body).Decode(&o)
 		if err != nil {
@@ -41,13 +43,12 @@ func CreateOrder(channel *amqp091.Channel, storage *storage.Storage) http.Handle
 			return
 		}
 
-		// Сообщение для RabbitMQ
-		msgPublish := map[string]string{
-			"ID":     o.ID,
-			"Status": o.Status,
-		}
+		//Сообщение для RabbitMQ
+		msgPublish.OrderId = o.ID
+		msgPublish.Status = o.Status
+		msgPublish.Message = "Принят"
 
-		msgRabit, err := json.Marshal(msgPublish)
+		msgRabit, err := json.Marshal(&msgPublish)
 		if err != nil {
 			http.Error(w, "Ошибка сериализации в json", http.StatusInternalServerError)
 			return
@@ -73,5 +74,35 @@ func CreateOrder(channel *amqp091.Channel, storage *storage.Storage) http.Handle
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(o)
 		log.Println("Заказ успешно создан")
+	}
+}
+
+func GetOrder(storage *storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+
+		if id == "" {
+			log.Println("Id пустой")
+			http.Error(w, "ID пустой", http.StatusBadRequest)
+			return
+		}
+
+		order, err := storage.GetOrderByID(id)
+		if err != nil {
+			http.Error(w, "нет такого заказа", http.StatusBadRequest)
+			log.Println("не удалось найти заказ")
+			return
+		}
+
+		orderJSON, err := json.Marshal(&order)
+		if err != nil {
+			log.Println("ошибка JSON", err)
+			http.Error(w, "не удалось превратить в json", http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(orderJSON)
+
 	}
 }

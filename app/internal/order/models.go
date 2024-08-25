@@ -12,8 +12,8 @@ type Notification struct {
 
 type Order struct {
 	ID        string    `json:"id"`
-	Name      string    `json:"product"`
-	Count     int       `json:"quantity"`
+	Name      string    `json:"name"`
+	Count     int       `json:"count"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	Price     float64   `json:"price"`
